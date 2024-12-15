@@ -1,0 +1,30 @@
+{
+  "name": "ytaudioplayer",
+  "version": "1.0.0",
+  "description": "This is a project to play only audio of the youtube video its also support playlist. This is for reduce brodband usages.",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node src/test.js",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [
+    "youtube",
+    "youtubemusic",
+    "playlist",
+    "audioPlayer",
+    "youtubeVideoToAudio"
+  ],
+  "author": "Subrata Mondal",
+  "license": "ISC",
+  "dependencies": {
+    "@bochilteam/scraper-savefrom": "^5.0.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.0",
+    "puppeteer": "^23.10.4",
+    "ytpl": "^2.3.0"
+  }
+}
