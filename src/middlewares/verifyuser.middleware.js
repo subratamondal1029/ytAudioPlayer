@@ -6,7 +6,9 @@ export default async function verifyUser(req, res, next) {
     const userAgent = req.headers["user-agent"];
     const platform = req.headers["sec-ch-ua-platform"];
 
-    const token = req.cookies.token;
+    const token =
+      req.cookies?.accessToken ||
+      req.header("Authorization")?.replace("Bearer", "");
     const decoded = await jwt.verify(token, process.env.JWT_SECRET_KEY);
 
     if (decoded.platform !== platform || decoded.userAgent !== userAgent) {

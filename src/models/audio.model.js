@@ -2,6 +2,10 @@ import { Schema, model } from "mongoose";
 
 const audioSchema = new Schema(
   {
+    _id: {
+      type: String,
+      required: true,
+    },
     title: {
       type: String,
       required: true,
@@ -12,6 +16,10 @@ const audioSchema = new Schema(
     },
     thumbnail: {
       type: String,
+    },
+    index: {
+      type: Number,
+      index: true,
     },
     url: {
       type: String,

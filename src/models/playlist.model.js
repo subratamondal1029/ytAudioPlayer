@@ -2,6 +2,10 @@ import { Schema, model } from "mongoose";
 
 const playlistSchema = new Schema(
   {
+    _id: {
+      type: String,
+      required: true,
+    },
     title: {
       type: String,
       required: true,
