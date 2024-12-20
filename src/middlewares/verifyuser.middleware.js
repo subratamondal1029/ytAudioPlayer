@@ -10,7 +10,7 @@ const verifyUser = asyncHandler(async (req, _, next) => {
 
   if (!token) throw new ApiError("Access Denied", 401);
 
-  const decoded = await jwt.verify(token, process.env.JWT_SECRET_KEY);
+  const decoded = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
   const user = await User.findById(decoded._id).select("-password");
 
