@@ -1,7 +1,8 @@
 import express from "express";
 import verifyUser from "./middlewares/verifyuser.middleware.js";
 import playlistRouter from "./routers/playlist.routes.js";
-import singleRouter from "./routers/single.routes.js";
+import audioRouter from "./routers/audio.routes.js";
+import authRouter from "./routers/auth.routes.js";
 import cookieParser from "cookie-parser";
 
 const app = express();
@@ -16,7 +17,8 @@ app.get("/", verifyUser, (req, res) => {
   res.end("Hello World!");
 });
 
-app.use("/audio", singleRouter);
+app.use("/audio", audioRouter);
 app.use("/playlist", playlistRouter);
+app.use("/user", authRouter);
 
 export default app;
