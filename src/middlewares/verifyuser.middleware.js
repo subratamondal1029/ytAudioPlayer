@@ -8,6 +8,8 @@ const verifyUser = asyncHandler(async (req, _, next) => {
     req.cookies?.accessToken ||
     req.header("Authorization")?.replace("Bearer", "");
 
+  if (!token) throw new ApiError("Access Denied", 401);
+
   const decoded = await jwt.verify(token, process.env.JWT_SECRET_KEY);
 
   const user = await User.findById(decoded._id).select("-password");
