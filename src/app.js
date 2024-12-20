@@ -12,13 +12,13 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static("../public"));
 
-app.get("/", verifyUser, (req, res) => {
+app.get("/api/v1/", verifyUser, (req, res) => {
   console.log(req.userId);
   res.end("Hello World!");
 });
 
-app.use("/audio", audioRouter);
-app.use("/playlist", playlistRouter);
-app.use("/user", authRouter);
+app.use("/api/v1/audio", audioRouter);
+app.use("/api/v1/playlist", playlistRouter);
+app.use("/api/v1/users", authRouter);
 
 export default app;
