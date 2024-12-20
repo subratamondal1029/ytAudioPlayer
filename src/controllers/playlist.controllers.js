@@ -111,6 +111,14 @@ const createPlaylist = asyncHandler(async (req, res) => {
       audios,
       createdBy: req.userId,
     });
+
+    if (playlist && playlist.audios.length > 0) {
+      res.json(
+        new ApiResponse("Playlist created successfully!", 200, playlist)
+      );
+    } else {
+      throw new ApiError("Error During Playlist Creation", 500);
+    }
   } catch (error) {
     throw new ApiError(error.message, 500);
   }

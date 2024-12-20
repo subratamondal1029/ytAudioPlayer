@@ -1,23 +1,22 @@
 import jwt from "jsonwebtoken";
 import ApiError from "../utils/apiError.js";
+import { User } from "../models/users.model.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
-export default async function verifyUser(req, res, next) {
-  try {
-    const userAgent = req.headers["user-agent"];
-    const platform = req.headers["sec-ch-ua-platform"];
+const verifyUser = asyncHandler(async (req, _, next) => {
+  const token =
+    req.cookies?.accessToken ||
+    req.header("Authorization")?.replace("Bearer", "");
 
-    const token =
-      req.cookies?.accessToken ||
-      req.header("Authorization")?.replace("Bearer", "");
-    const decoded = await jwt.verify(token, process.env.JWT_SECRET_KEY);
+  const decoded = await jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-    if (decoded.platform !== platform || decoded.userAgent !== userAgent) {
-      res.status(403).json(new ApiError("User Not Match", 403));
-    }
+  const user = await User.findById(decoded._id).select("-password");
 
-    req.userId = decoded.userId;
-    next();
-  } catch (error) {
-    res.status(401).json(new ApiError("invalid token", 401));
-  }
-}
+  if (!user) throw new ApiError("User not found", 404);
+
+  req.user = user;
+
+  next();
+});
+
+export default verifyUser;
