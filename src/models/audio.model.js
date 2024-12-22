@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 
 const audioSchema = new Schema(
   {
-    _id: {
+    ytId: {
       type: String,
       required: true,
     },
