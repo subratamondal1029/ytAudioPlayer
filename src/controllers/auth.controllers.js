@@ -88,7 +88,9 @@ const loginUser = asyncHandler(async (req, res) => {
     user._id
   );
 
-  const { password: _, ...logedinUser } = user;
+  const logedinUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
 
   res
     .set("Authorization", `Bearer ${accessToken}`)
