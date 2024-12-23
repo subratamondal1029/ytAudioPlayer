@@ -2,135 +2,163 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/apiError.js";
 import ApiResponse from "../utils/apiResponse.js";
 import { Playlist } from "../models/playlist.model.js";
+import ytpl from "ytpl";
+import { createAudioDocument } from "../utils/index.js";
+import mongoose from "mongoose";
+import crypto from "crypto";
 import { Audio } from "../models/audio.model.js";
 import { savefrom } from "@bochilteam/scraper-savefrom";
-import ytpl from "ytpl";
 
 const getDurationInSeconds = (duration) => {
   const [hours, minutes, seconds] = duration.split(":");
   return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
 };
 
-const createAudio = async (audioData) => {
-  const audio = Audio.findById(audioData._id);
-  if (audio) return Promise.resolve(audio);
-
-  Promise.resolve(Audio.create(audioData)).catch((error) => {
-    throw new ApiError(error.message || "Error During Audio Creation", 500);
-  });
-};
-
 const getPlaylist = asyncHandler(async (req, res) => {
-  const id = req.params?.id;
-  try {
-    if (!id) throw new ApiError("Id is Required", 400);
+  const id = req.query?.id;
 
-    const playlist = await Playlist.findById(id);
+  if (!id) throw new ApiError("Id is required Required", 400);
 
-    console.log("playlist Data: ", playlist);
+  let playlist = await Playlist.findOne({
+    $or: [
+      {
+        _id: id,
+      },
+      {
+        ytId: id,
+      },
+    ],
+  });
 
-    res.json(new ApiResponse("Playlist fetched successfully!", 200, playlist));
-  } catch (error) {
-    throw new ApiError(error.message, 500);
-  }
-});
-
-const addVideo = asyncHandler(async (req, res) => {
-  try {
-    const { playlistId, videoId } = req.body;
-
-    const playlistData = await Playlist.findById(playlistId);
-    if (!playlistData) {
-      throw new ApiError("Playlist not found", 404);
-    }
-    const ifAudioExists = playlistData.audios.some(
-      (audio) => audio._id == videoId
+  if (!playlist) {
+    const playlistData = await ytpl(
+      `https://www.youtube.com/playlist?list=${id}`
     );
 
-    if (ifAudioExists) {
-      throw new ApiError("Audio already exists in playlist", 409);
-    }
-
-    let audioData = await Audio.findById(videoId);
-
-    if (!audioData) {
-      const url = `https://www.youtube.com/watch?v=${videoId}`;
-      const videoDetails = await savefrom(url);
-      const audioUrl = videoDetails[0].url.find((url) =>
-        url.name.toLowerCase().includes("audio")
-      ).url;
-
-      audioData = await createAudio({
-        _id: videoId,
-        title: videoDetails[0].meta.title,
-        thumbnail: videoDetails[0].thumb,
-        duration: getDurationInSeconds(videoDetails[0].meta.duration),
-        url: audioUrl,
-      });
-
-      if (!audioData) {
-        throw new ApiError("Audio not found", 404);
-      } else {
-        playlistData.audios.push(audioData._id);
-        await playlistData.save();
-      }
-    }
-    res.json(new ApiResponse("Audio fetched successfully!", 200, audioData));
-  } catch (error) {
-    throw new ApiError(error.message, 500);
+    playlist = {
+      _id: playlistData?.id || crypto.randomUUID(),
+      ytId: playlistData?.id || crypto.randomUUID(),
+      title: playlistData?.title || "Not Available",
+      description: playlistData?.description || "Not Available",
+      thumbnail: playlistData?.bestThumbnail?.url,
+      audios: playlistData.items.map((audio, index) => ({
+        _id: audio.id || crypto.randomUUID(),
+        ytId: audio.id || crypto.randomUUID(),
+        index,
+        title: audio?.title,
+        thumbnail: audio?.bestThumbnail?.url,
+        duration: parseInt(audio?.durationSec),
+        url: audio?.shortUrl,
+      })),
+      createdBy: null,
+    };
   }
+
+  res.json(new ApiResponse("Playlist Fetched Successfully", 200, playlist));
 });
 
 const createPlaylist = asyncHandler(async (req, res) => {
-  try {
-    const url = req.body?.url;
+  const {
+    isCustom = false,
+    url,
+    limit = 100,
+    audioUrls = [],
+    title,
+    description,
+  } = req.body;
 
-    const playlistData = await ytpl(url, { pages: 1 });
-    console.log("Playlist: ", playlistData);
+  let playlistData;
+  let audioPromises;
 
-    const audioPromises = playlistData.items.map((item) =>
-      createAudio({
-        _id: item.id,
-        title: item.title,
-        index: parseInt(item.index),
-        thumbnail: item.bestThumbnail.url,
-        duration: getDurationInSeconds(item.duration),
-        url: item.shortUrl,
+  // TODO: write thumbnail upload code in mongodb
+
+  if (!isCustom) {
+    if (!url)
+      throw new ApiError(
+        "Url is Required to create playlist from youtube",
+        400
+      );
+
+    playlistData = await ytpl(url, { pages: Infinity, limit });
+    playlistData = {
+      ...playlistData,
+      thumb:
+        playlistData?.bestThumbnail?.url ||
+        playlistData?.items?.[0]?.bestThumbnail?.url,
+    };
+
+    audioPromises = playlistData.items.map((item) =>
+      createAudioDocument({
+        ytId: item?.id,
+        title: item?.title,
+        index: parseInt(item?.index),
+        thumbnail: item?.bestThumbnail?.url,
+        duration: parseInt(item.durationSec),
+        url: item?.shortUrl,
       })
     );
-
-    const audios = await (
-      await Promise.all(audioPromises)
-    ).map((audio) => audio._id);
-
-    const playlist = await Playlist.create({
-      _id: playlistData.id,
-      title: playlistData.title,
-      description: playlistData.description,
-      thumbnail: playlistData.bestThumbnail.url,
-      audios,
-      createdBy: req.userId,
-    });
-
-    if (playlist && playlist.audios.length > 0) {
-      res.json(
-        new ApiResponse("Playlist created successfully!", 200, playlist)
+  } else {
+    if (!title || !description) {
+      throw new ApiError(
+        "Title and Description is Requied for creating custom playlist",
+        400
       );
-    } else {
-      throw new ApiError("Error During Playlist Creation", 500);
     }
-  } catch (error) {
-    throw new ApiError(error.message, 500);
+
+    if (audioUrls.length == 0) {
+      throw new ApiError("Atleast one Audio Url required", 400);
+    }
+
+    const audioDetails = await Promise.all(
+      audioUrls.map(async (url) => savefrom(url))
+    );
+
+    audioDetailsPromises = audioDetails.map((audio, index) =>
+      createAudioDocument({
+        ytId: audio?.id,
+        index,
+        url: `https://www.youtube.com/watch?v=${audio?.id}`,
+        duration: parseInt(audio?.meta?.duration),
+        title: audio?.meta?.title,
+        description: audio?.meta?.description,
+        thumbnail: audio?.thumb,
+      })
+    );
+  }
+
+  const audioDocuments = await Promise.all(audioPromises);
+
+  const audios = audioDocuments
+    .sort((a, b) => a.audio?.index - b.audio?.index) //Cross check for get proper indexing
+    .map((a) => new mongoose.Types.ObjectId(a.audio._id));
+
+  const creatableAudioDocument = audioDocuments
+    .filter((audio) => !audio.available)
+    .map((a) => a.audio);
+
+  console.log("audio Ids: ", audios);
+  console.log("Audio Documents to create: ", creatableAudioDocument);
+
+  if (creatableAudioDocument.length > 0) {
+    await Audio.insertMany(creatableAudioDocument);
+  }
+
+  const playlist = await Playlist.create({
+    ytId: playlistData?.id || "",
+    title: title || playlistData?.title,
+    description: description || playlistData?.description,
+    thumbnail: playlistData?.thumb, //TODO: add uploaded thumbnail of first video thumbnail
+    audios,
+    createdBy: req?.user._id,
+  });
+
+  if (playlist && playlist.audios.length > 0) {
+    res.json(new ApiResponse("Playlist created successfully!", 201, playlist));
+  } else {
+    throw new ApiError("Error During Playlist Creation", 500);
   }
 });
 
-const deletePlaylist = asyncHandler(async (req, res) => {
-  try {
-  } catch (error) {
-    throw new ApiError(error.message, 500);
-  }
-});
+const deletePlaylist = asyncHandler(async (req, res) => {});
 
-const removeVideo = asyncHandler(async (req, res) => {});
-
-export { createPlaylist, getPlaylist, addVideo, removeVideo };
+export { createPlaylist, getPlaylist, deletePlaylist };
