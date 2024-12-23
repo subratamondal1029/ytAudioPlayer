@@ -4,10 +4,20 @@ const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch((err) => {
     console.log("Error in asyncHandler: ", err);
 
+    let errorCode;
+
+    if (err.code && typeof err.code === "number") {
+      errorCode = err.code;
+    } else errorCode = 500;
+
     res
-      .status(err.code || 500)
+      .status(errorCode || 500)
       .json(
-        new ApiError(err.message || "Something went wrong", err.code || 500)
+        new ApiError(
+          err.message || "Something went wrong",
+          errorCode || 500,
+          err.errors || []
+        )
       );
   });
 };
