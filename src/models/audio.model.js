@@ -5,6 +5,7 @@ const audioSchema = new Schema(
     ytId: {
       type: String,
       required: true,
+      index: true,
     },
     title: {
       type: String,
@@ -24,6 +25,9 @@ const audioSchema = new Schema(
     url: {
       type: String,
       required: true,
+    },
+    audioUrl: {
+      type: String,
     },
   },
   { timestamps: true }
