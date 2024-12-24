@@ -29,6 +29,7 @@ const playlistSchema = new Schema(
     public: {
       type: Boolean,
       default: false,
+      index: true,
     },
   },
   { timestamps: true }
