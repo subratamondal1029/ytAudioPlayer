@@ -6,7 +6,7 @@ const asyncHandler = (fn) => (req, res, next) => {
 
     let errorCode;
 
-    if (err.code && typeof err.code === "number") {
+    if (err.code && typeof err.code === "number" && err.code < 600) {
       errorCode = err.code;
     } else errorCode = 500;
 
