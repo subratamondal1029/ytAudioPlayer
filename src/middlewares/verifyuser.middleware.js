@@ -4,6 +4,8 @@ import { User } from "../models/users.model.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
 const verifyUser = asyncHandler(async (req, _, next) => {
+  if (req.skipVerification) return next();
+
   const token =
     req.cookies?.accessToken ||
     req.header("Authorization")?.replace("Bearer", "");
