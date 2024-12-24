@@ -27,9 +27,8 @@ export const getAudio = (url) => {
         title: result.title,
         description: result.description,
         thumbnail: result.thumbnail,
-        duration: result.duration, // Duration in seconds
-        audioUrl: result.url,
-        url: result.original_url,
+        duration: parseInt(result.duration), // Duration in seconds
+        url: result.url,
       };
 
       res(details);

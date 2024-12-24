@@ -8,6 +8,7 @@ import mongoose from "mongoose";
 import crypto from "crypto";
 import { Audio } from "../models/audio.model.js";
 import { savefrom } from "@bochilteam/scraper-savefrom";
+import { getAudio } from "../utils/index.js";
 
 const getDurationInSeconds = (duration) => {
   const [hours, minutes, seconds] = duration.split(":");
@@ -65,6 +66,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
     audioUrls = [],
     title,
     description,
+    isPublic = false,
   } = req.body;
 
   let playlistData;
@@ -110,18 +112,17 @@ const createPlaylist = asyncHandler(async (req, res) => {
     }
 
     const audioDetails = await Promise.all(
-      audioUrls.map(async (url) => savefrom(url)) //TODO: change the savefrom with cutom build method
+      audioUrls.map(async (url) => getAudio(url)) //TODO: change the savefrom with cutom build method
     );
 
     audioDetailsPromises = audioDetails.map((audio, index) =>
       createAudioDocument({
         ytId: audio?.id,
-        index,
-        url: `https://www.youtube.com/watch?v=${audio?.id}`,
-        duration: parseInt(audio?.meta?.duration),
-        title: audio?.meta?.title,
-        description: audio?.meta?.description,
-        thumbnail: audio?.thumb,
+        audioUrl: audio?.url,
+        duration: audio?.duration,
+        title: audio?.title,
+        description: audio?.description,
+        thumbnail: audio?.thumbnail,
       })
     );
   }
@@ -150,6 +151,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
     thumbnail: playlistData?.thumb, //TODO: add uploaded thumbnail of first video thumbnail
     audios,
     createdBy: req?.user._id,
+    public: isPublic,
   });
 
   if (playlist && playlist.audios.length > 0) {
