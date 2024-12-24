@@ -5,6 +5,8 @@ import audioRouter from "./routers/audio.routes.js";
 import authRouter from "./routers/auth.routes.js";
 import testRouter from "./routers/test.routes.js";
 import cookieParser from "cookie-parser";
+import { getHomeData } from "./controllers/home.controllers.js";
+import homeMiddleware from "./middlewares/home.middleware.js";
 
 const app = express();
 
@@ -13,10 +15,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static("../public"));
 
-app.get("/api/v1/", verifyUser, (req, res) => {
-  console.log(req.userId);
-  res.end("Hello World!");
-});
+app.get("/api/v1/", homeMiddleware, verifyUser, getHomeData);
 
 app.use("/api/v1/audio", audioRouter);
 app.use("/api/v1/playlist", playlistRouter);
