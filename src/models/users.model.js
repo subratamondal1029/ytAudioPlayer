@@ -20,6 +20,17 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
+    watchHistory: [
+      {
+        video: {
+          type: Schema.Types.ObjectId,
+          ref: "Audio",
+          required: true,
+          index: true,
+        },
+        lastWatchedAt: { type: Number, default: 0 },
+      },
+    ],
     refreshToken: {
       type: String,
       unique: true,

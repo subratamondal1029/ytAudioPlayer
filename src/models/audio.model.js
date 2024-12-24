@@ -17,17 +17,14 @@ const audioSchema = new Schema(
     },
     thumbnail: {
       type: String,
-    },
-    index: {
-      type: Number,
-      index: true,
-    },
-    url: {
-      type: String,
       required: true,
     },
     audioUrl: {
       type: String,
+    },
+    public: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

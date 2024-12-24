@@ -26,6 +26,10 @@ const playlistSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
     },
+    public: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
