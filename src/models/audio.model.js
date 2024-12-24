@@ -22,6 +22,10 @@ const audioSchema = new Schema(
     audioUrl: {
       type: String,
     },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
     public: {
       type: Boolean,
       default: false,
